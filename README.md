@@ -1,4 +1,4 @@
-# Turbo Query
+# Turbo Query
 
 > Lightweight asynchronous data management
 
