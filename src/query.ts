@@ -91,6 +91,16 @@ export interface TurboQueryOptions {
 export type TurboCacheType = 'resolvers' | 'items'
 
 /**
+ * The turbo mutation function type.
+ */
+export type TurboMutateFunction<T> = (old?: T, expiresAt?: Date) => T
+
+/**
+ * The available mutation values.
+ */
+export type TurboMutateValue<T> = T | TurboMutateFunction<T>
+
+/**
  * Represents the methods a turbo query
  * should implement.
  */
@@ -131,7 +141,7 @@ export interface TurboQuery {
    * The mutated value is considered expired and will be
    * replaced immediatly if a refetch happens.
    */
-  mutate<T = any>(key: string, item: T): void
+  mutate<T = any>(key: string, item: TurboMutateValue<T>): void
 
   /**
    * Aborts the active resolvers on each key
@@ -139,7 +149,7 @@ export interface TurboQuery {
    * The fetcher is responsible for using the
    * AbortSignal to cancel the job.
    */
-  abort(key?: string | string[]): void
+  abort(key?: string | string[], reason?: any): void
 
   /**
    * Forgets the given keys from the cache.
@@ -248,7 +258,12 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
    * The mutated value is considered expired and will be
    * replaced immediatly if a refetch happens.
    */
-  function mutate<T = any>(key: string, item: T): void {
+  function mutate<T = any>(key: string, item: TurboMutateValue<T>): void {
+    if (typeof item === 'function') {
+      const fn = item as TurboMutateFunction<T>
+      const cached = itemsCache.get<ItemsCacheItem<T>>(key)
+      item = fn(cached.item, cached.expiresAt)
+    }
     itemsCache.set(key, { item, expiresAt: new Date() })
     events.emit(`mutated:${key}`, item)
   }

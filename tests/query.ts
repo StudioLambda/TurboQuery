@@ -158,6 +158,28 @@ it.concurrent('can subscribe to mutations on resources', async () => {
   expect(result).toBe('mutated-example')
 })
 
+it.concurrent('can subscribe to mutations on resources 2', async () => {
+  async function fetcher() {
+    return 1
+  }
+
+  const { query, subscribe, mutate } = createTurboQuery({ fetcher })
+
+  const current = await query('example-key', { fetcher })
+
+  expect(current).toBe(1)
+
+  let result: number | undefined = undefined
+  const unsubscribe = subscribe<number>('example-key', 'mutated', async function (item) {
+    result = item
+  })
+
+  mutate<number>('example-key', (old) => (old ?? 0) + 1)
+  unsubscribe()
+
+  expect(result).toBe(2)
+})
+
 it.concurrent('can subscribe to aborts on resources', async () => {
   function fetcher(_key: string, { signal }: TurboFetcherAdditional) {
     return new Promise(function (resolve, reject) {
