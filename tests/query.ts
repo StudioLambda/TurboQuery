@@ -119,6 +119,24 @@ it.concurrent('can subscribe to refetchings on resources', async () => {
   expect(result).toBe('example')
 })
 
+it.concurrent('can subscribe to refetchings on pending resources', async () => {
+  async function fetcher() {
+    return 'example'
+  }
+
+  const { query, subscribe } = createTurboQuery({ fetcher, expiration: () => 0 })
+  const r = query('example-key', { fetcher })
+
+  let result: string | undefined = undefined
+  const unsubscribe = subscribe<string>('example-key', 'refetching', async function (item) {
+    result = await item
+  })
+  await r
+  unsubscribe()
+
+  expect(result).toBe('example')
+})
+
 it.concurrent('can subscribe to resolutions on resources', async () => {
   async function fetcher() {
     return 'example'

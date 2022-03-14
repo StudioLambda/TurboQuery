@@ -241,6 +241,8 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
    * Subscribes to a given event on a key. The event handler
    * does have a payload parameter that will contain relevant
    * information depending on the event type.
+   * If there's a pending resolver for that key, the `refetching`
+   * event is fired immediatly.
    */
   function subscribe<T = any>(
     key: string,
@@ -248,6 +250,11 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
     listener: TurboQueryListener<T>
   ): () => void {
     events.subscribe(`${event}:${key}`, listener)
+    // For the refetching event, we want to immediatly return if there's
+    // a pending resolver.
+    if (event === 'refetching' && resolversCache.has(key)) {
+      listener(resolversCache.get<ResolversCacheItem<T>>(key).item)
+    }
     return function () {
       events.unsubscribe(`${event}:${key}`, listener)
     }
@@ -367,7 +374,7 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
     }
 
     // Check if there's a pending resolver for that data.
-    if (resolversCache.has(key)) return await resolversCache.get(key).item
+    if (resolversCache.has(key)) return await resolversCache.get<ResolversCacheItem<T>>(key).item
 
     // Check if there's an item in the cache for the given key.
     if (itemsCache.has(key)) {
