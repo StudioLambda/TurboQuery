@@ -90,6 +90,12 @@ export interface TurboQueryOptions<T = any> {
    * is removed from the cache.
    */
   removeOnError?: boolean
+
+  /**
+   * Determines if the result should be a fresh fetched
+   * instance regardless of any cached value or its expiration time.
+   */
+  fresh?: boolean
 }
 
 /**
@@ -247,6 +253,12 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
   let instanceRemoveOnError = instanceOptions?.removeOnError ?? false
 
   /**
+   * Determines if the result should be a fresh fetched
+   * instance regardless of any cached value or its expiration time.
+   */
+  let instanceFresh = instanceOptions?.fresh ?? false
+
+  /**
    * Configures the current instance of turbo query.
    */
   function configure(options?: TurboQueryConfiguration): void {
@@ -257,6 +269,7 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
     instanceFetcher = options?.fetcher ?? instanceFetcher
     instanceStale = options?.stale ?? instanceStale
     instanceRemoveOnError = options?.removeOnError ?? instanceRemoveOnError
+    instanceFresh = options?.fresh ?? instanceFresh
   }
 
   /**
@@ -371,6 +384,12 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
      */
     const removeOnError = options?.removeOnError ?? instanceRemoveOnError
 
+    /**
+     * Determines if the result should be a fresh fetched
+     * instance regardless of any cached value or its expiration time.
+     */
+    const fresh = options?.fresh ?? instanceOptions?.fresh
+
     // Force fetching of the data.
     async function refetch(key: string): Promise<T> {
       try {
@@ -415,6 +434,10 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
 
     // Check if there's a pending resolver for that data.
     if (resolversCache.has(key)) return await resolversCache.get<ResolversCacheItem<T>>(key).item
+
+    // We want to force a fresh item ignoring any current cached
+    // value or its expiration time.
+    if (fresh) return await refetch(key)
 
     // Check if there's an item in the cache for the given key.
     if (itemsCache.has(key)) {

@@ -266,6 +266,8 @@ it.concurrent('can reconfigure turbo query', async () => {
     async fetcher() {
       return 'different'
     },
+    removeOnError: true,
+    fresh: true,
   })
 
   const result = await query('some-key')
@@ -463,4 +465,21 @@ it.concurrent('can subscribe to errors', async () => {
   await expect(query<string>('example-key')).rejects.toThrowError('foo')
   expect(err).toBeDefined()
   expect(err?.message).toBe('foo')
+})
+
+it.concurrent('can give a fresh instance if needed', async () => {
+  let times = 0
+  async function fetcher() {
+    times++
+    return 'example'
+  }
+
+  const { query } = createTurboQuery({ fetcher, expiration: () => 1000 })
+
+  await query('example-key')
+  expect(times).toBe(1)
+  await query('example-key')
+  expect(times).toBe(1)
+  await query('example-key', { fresh: true })
+  expect(times).toBe(2)
 })
