@@ -62,18 +62,18 @@ export interface TurboFetcherAdditional {
 /**
  * The available options for turbo query.
  */
-export interface TurboQueryOptions {
+export interface TurboQueryOptions<T = any> {
   /**
    * Determines the item deduplication interval.
    * This determines how many milliseconds an item
    * is considered valid.
    */
-  expiration?(item: any): number
+  expiration?(item: T): number
 
   /**
    * Determines the fetcher function to use.
    */
-  fetcher?(key: string, additional: TurboFetcherAdditional): Promise<any>
+  fetcher?(key: string, additional: TurboFetcherAdditional): Promise<T>
 
   /**
    * Determines if we can return a sale item
@@ -83,6 +83,13 @@ export interface TurboQueryOptions {
    * promise will be the revalidation promise.
    */
   stale?: boolean
+
+  /**
+   * Removes the stored item if there is an error in the request.
+   * By default, we don't remove the item upon failure, only the resolver
+   * is removed from the cache.
+   */
+  removeOnError?: boolean
 }
 
 /**
@@ -114,7 +121,7 @@ export interface TurboQuery {
    * Fetches the key information using a fetcher.
    * The returned promise contains the result item.
    */
-  query<T = any>(key: string, options?: TurboQueryOptions): Promise<T>
+  query<T = any>(key: string, options?: TurboQueryOptions<T>): Promise<T>
 
   /**
    * Subscribes to a given event on a key. The event handler
@@ -130,6 +137,7 @@ export interface TurboQuery {
   subscribe<T = any>(key: string, event: 'mutated', listener: TurboListener<T>): () => void
   subscribe<T = any>(key: string, event: 'aborted', listener: TurboListener<Promise<T>>): () => void
   subscribe<T = any>(key: string, event: 'forgotten', listener: TurboListener<T>): () => void
+  subscribe<T = any>(key: string, event: 'error', listener: TurboListener<T>): () => void
   subscribe<T = any>(
     key: string,
     event: TurboQueryEvent,
@@ -166,7 +174,13 @@ export interface TurboQuery {
 /**
  * Available events on turbo query.
  */
-export type TurboQueryEvent = 'refetching' | 'resolved' | 'mutated' | 'aborted' | 'forgotten'
+export type TurboQueryEvent =
+  | 'refetching'
+  | 'resolved'
+  | 'mutated'
+  | 'aborted'
+  | 'forgotten'
+  | 'error'
 
 /**
  * Event listeners of turbo query.
@@ -226,6 +240,13 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
   let instanceStale = instanceOptions?.stale ?? true
 
   /**
+   * Removes the stored item if there is an error in the request.
+   * By default, we don't remove the item upon failure, only the resolver
+   * is removed from the cache.
+   */
+  let instanceRemoveOnError = instanceOptions?.removeOnError ?? false
+
+  /**
    * Configures the current instance of turbo query.
    */
   function configure(options?: TurboQueryConfiguration): void {
@@ -235,6 +256,7 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
     instanceExpiration = options?.expiration ?? instanceExpiration
     instanceFetcher = options?.fetcher ?? instanceFetcher
     instanceStale = options?.stale ?? instanceStale
+    instanceRemoveOnError = options?.removeOnError ?? instanceRemoveOnError
   }
 
   /**
@@ -322,7 +344,7 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
    * Fetches the key information using a fetcher.
    * The returned promise contains the result item.
    */
-  async function query<T = any>(key: string, options?: TurboQueryOptions): Promise<T> {
+  async function query<T = any>(key: string, options?: TurboQueryOptions<T>): Promise<T> {
     /**
      * Stores the expiration time of an item.
      */
@@ -342,35 +364,53 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
      */
     const stale = options?.stale ?? instanceStale
 
+    /**
+     * Removes the stored item if there is an error in the request.
+     * By default, we don't remove the item upon failure, only the resolver
+     * is removed from the cache.
+     */
+    const removeOnError = options?.removeOnError ?? instanceRemoveOnError
+
     // Force fetching of the data.
     async function refetch(key: string): Promise<T> {
-      // Create the abort controller that will be
-      // called when a query is aborted.
-      const controller = new AbortController()
+      try {
+        // Create the abort controller that will be
+        // called when a query is aborted.
+        const controller = new AbortController()
 
-      // Initiate the fetching request.
-      const result = fetcher(key, { signal: controller.signal })
+        // Initiate the fetching request.
+        const result = fetcher(key, { signal: controller.signal })
 
-      // Adds the resolver to the cache.
-      resolversCache.set(key, { item: result, controller })
-      events.emit(`refetching:${key}`, result)
+        // Adds the resolver to the cache.
+        resolversCache.set(key, { item: result, controller })
+        events.emit(`refetching:${key}`, result)
 
-      // Awaits the fetching to get the result item.
-      const item = await result
+        // Awaits the fetching to get the result item.
+        const item = await result
 
-      // Removes the resolver from the cache.
-      resolversCache.remove(key)
+        // Removes the resolver from the cache.
+        resolversCache.remove(key)
 
-      // Create the expiration time for the item.
-      const expiresAt = new Date()
-      expiresAt.setMilliseconds(expiresAt.getMilliseconds() + expiration(item))
+        // Create the expiration time for the item.
+        const expiresAt = new Date()
+        expiresAt.setMilliseconds(expiresAt.getMilliseconds() + expiration(item))
 
-      // Set the item to the cache.
-      itemsCache.set(key, { item, expiresAt })
-      events.emit(`resolved:${key}`, item)
+        // Set the item to the cache.
+        itemsCache.set(key, { item, expiresAt })
+        events.emit(`resolved:${key}`, item)
 
-      // Return back the item.
-      return item
+        // Return back the item.
+        return item
+      } catch (error) {
+        // Remove the resolver.
+        resolversCache.remove(key)
+        // Check if the item should be removed as well.
+        if (removeOnError) itemsCache.remove(key)
+        // Notify of the error.
+        events.emit(`error:${key}`, error)
+        // Throw back the error.
+        throw error
+      }
     }
 
     // Check if there's a pending resolver for that data.
@@ -387,7 +427,9 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
       // to return a stale item while revalidating
       // in the background.
       if (hasExpired && stale) {
-        refetch(key)
+        // We have to silence the error to avoid unhandled promises.
+        // Refer to the error event if you need full controll of errors.
+        refetch(key).catch(() => {})
         return cached.item
       }
 

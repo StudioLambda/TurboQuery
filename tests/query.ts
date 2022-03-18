@@ -215,7 +215,6 @@ it.concurrent('can subscribe to aborts on resources', async () => {
   let result: Promise<string> | undefined = undefined
   const unsubscribe = subscribe<string>('example-key', 'aborted', async function (item) {
     result = item
-    console.log(item)
   })
 
   const r = query('example-key', { fetcher })
@@ -413,4 +412,55 @@ it.concurrent('can forget a turbo query key 3', async () => {
   expect(keys('items')).toContain('example-key')
   forget()
   expect(keys('items')).toHaveLength(0)
+})
+
+it.concurrent('removes resolver when query fails', async () => {
+  async function fetcher(): Promise<string> {
+    throw new Error('foo')
+  }
+
+  async function fetcher2() {
+    return 'example'
+  }
+
+  const { query } = createTurboQuery({ expiration: () => 0 })
+
+  await expect(query<string>('example-key', { fetcher })).rejects.toThrowError('foo')
+  await expect(query<string>('example-key', { fetcher: fetcher2 })).resolves.toBe('example')
+})
+
+it.concurrent('removes items if specified when query fails', async () => {
+  async function fetcher(): Promise<string> {
+    throw new Error('foo')
+  }
+
+  async function fetcher2() {
+    return 'example'
+  }
+
+  const { query, keys } = createTurboQuery({ expiration: () => 0 })
+
+  await query<string>('example-key', { fetcher: fetcher2 })
+  expect(keys('items')).toContain('example-key')
+  await expect(
+    query<string>('example-key', { fetcher, stale: false, removeOnError: true })
+  ).rejects.toThrowError('foo')
+  expect(keys('items')).not.toContain('example-key')
+})
+
+it.concurrent('can subscribe to errors', async () => {
+  async function fetcher(): Promise<string> {
+    throw new Error('foo')
+  }
+
+  const { query, subscribe } = createTurboQuery({ fetcher, expiration: () => 0 })
+
+  let err: Error | undefined
+  subscribe<Error>('example-key', 'error', function (e) {
+    err = e
+  })
+
+  await expect(query<string>('example-key')).rejects.toThrowError('foo')
+  expect(err).toBeDefined()
+  expect(err?.message).toBe('foo')
 })
