@@ -393,6 +393,10 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
     // Force fetching of the data.
     async function refetch(key: string): Promise<T> {
       try {
+        // Check if there's a pending resolver for that data.
+        if (resolversCache.has(key))
+          return await resolversCache.get<ResolversCacheItem<T>>(key).item
+
         // Create the abort controller that will be
         // called when a query is aborted.
         const controller = new AbortController()
@@ -432,9 +436,6 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
       }
     }
 
-    // Check if there's a pending resolver for that data.
-    if (resolversCache.has(key)) return await resolversCache.get<ResolversCacheItem<T>>(key).item
-
     // We want to force a fresh item ignoring any current cached
     // value or its expiration time.
     if (fresh) return await refetch(key)
@@ -465,9 +466,9 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
       return cached.item
     }
 
-    // The item is not found in either the resolvers nor the items cache.
+    // The item is not found in  the items cache.
     // We need to perform a revalidation of the item.
-    return refetch(key)
+    return await refetch(key)
   }
 
   return { query, subscribe, mutate, configure, abort, forget, keys }

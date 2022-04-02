@@ -483,3 +483,28 @@ it.concurrent('can give a fresh instance if needed', async () => {
   await query('example-key', { fresh: true })
   expect(times).toBe(2)
 })
+
+it.concurrent('uses stale data while resolving', async () => {
+  function fetcher(slow?: boolean) {
+    return async function () {
+      if (slow) await new Promise((r) => setTimeout(r, 100))
+      return `example-${slow ? 'slow' : 'fast'}`
+    }
+  }
+
+  const { query } = createTurboQuery({ expiration: () => 0 })
+
+  const data = await query('example-key', { fetcher: fetcher(false) })
+  expect(data).toBe('example-fast')
+
+  const data2 = await query('example-key', { fetcher: fetcher(true) })
+  expect(data2).toBe('example-fast')
+
+  const data3 = await query('example-key', { fetcher: fetcher(true) })
+  expect(data3).toBe('example-fast')
+
+  await new Promise((r) => setTimeout(r, 100))
+
+  const data4 = await query('example-key', { fetcher: fetcher(true) })
+  expect(data4).toBe('example-slow')
+})
