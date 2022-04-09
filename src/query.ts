@@ -175,6 +175,12 @@ export interface TurboQuery {
    * Returns the given keys for the given cache.
    */
   keys(cache?: TurboCacheType): string[]
+
+  /**
+   * Returns the expiration date of a given key item.
+   * If the item is not in the cache, it will return undefined.
+   */
+  expiration(key: string): Date | undefined
 }
 
 /**
@@ -354,6 +360,14 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
   }
 
   /**
+   * Returns the expiration date of a given key item.
+   * If the item is not in the cache, it will return undefined.
+   */
+  function expiration(key: string): Date | undefined {
+    return itemsCache.has(key) ? itemsCache.get(key).expiresAt : undefined
+  }
+
+  /**
    * Fetches the key information using a fetcher.
    * The returned promise contains the result item.
    */
@@ -471,5 +485,5 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
     return await refetch(key)
   }
 
-  return { query, subscribe, mutate, configure, abort, forget, keys }
+  return { query, subscribe, mutate, configure, abort, forget, keys, expiration }
 }

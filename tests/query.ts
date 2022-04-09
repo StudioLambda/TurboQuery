@@ -508,3 +508,16 @@ it.concurrent('uses stale data while resolving', async () => {
   const data4 = await query('example-key', { fetcher: fetcher(true) })
   expect(data4).toBe('example-slow')
 })
+
+it.concurrent('can get expiration date of items', async () => {
+  async function fetcher() {
+    return 'foo'
+  }
+
+  const { query, expiration } = createTurboQuery({ fetcher })
+
+  await query('example-key')
+
+  expect(expiration('bad-key')).toBeUndefined()
+  expect(expiration('example-key')).toBeInstanceOf(Date)
+})
