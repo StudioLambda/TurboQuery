@@ -4,4 +4,5 @@ export * from './query'
 
 import { createTurboQuery } from './query'
 
-export const { query, subscribe, mutate, configure, abort, forget, keys } = createTurboQuery()
+export const { query, subscribe, mutate, configure, abort, forget, keys, expiration } =
+  createTurboQuery()
