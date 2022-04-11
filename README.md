@@ -1,10 +1,3 @@
-<p align="center">
-  :warning: &nbsp;<b>The main branch in this repository will be stale during the duration of the solid hackathon</b> :warning:
-</p>
-<p align="center">
-  :warning: &nbsp;<a href="https://github.com/StudioLambda/TurboQuery/tree/next">Click here to visit the latest version</a> :warning:
-</p>
-
 # Turbo Query
 
 > Lightweight asynchronous data management
