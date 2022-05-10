@@ -76,10 +76,10 @@ export interface TurboQueryOptions<T = any> {
   fetcher?(key: string, additional: TurboFetcherAdditional): Promise<T>
 
   /**
-   * Determines if we can return a sale item
-   * If true, it will return the previous stale item
+   * Determines if we can return a stale item.
+   * If `true`, it will return the previous stale item
    * stored in the cache if it has expired. It will attempt
-   * to revalidate it in the background. If false, the returned
+   * to revalidate it in the background. If `false`, the returned
    * promise will be the revalidation promise.
    */
   stale?: boolean
@@ -159,9 +159,9 @@ export interface TurboQuery {
 
   /**
    * Aborts the active resolvers on each key
-   * by calling .abort() on the AbortController.
+   * by calling `.abort()` on the `AbortController`.
    * The fetcher is responsible for using the
-   * AbortSignal to cancel the job.
+   * `AbortSignal` to cancel the job.
    */
   abort(key?: string | string[], reason?: any): void
 
@@ -178,7 +178,7 @@ export interface TurboQuery {
 
   /**
    * Returns the expiration date of a given key item.
-   * If the item is not in the cache, it will return undefined.
+   * If the item is not in the cache, it will return `undefined`.
    */
   expiration(key: string): Date | undefined
 }
@@ -243,10 +243,10 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
   let instanceFetcher = instanceOptions?.fetcher ?? defaultFetcher
 
   /**
-   * Determines if we can return a sale item
-   * If true, it will return the previous stale item
+   * Determines if we can return a stale item.
+   * If `true`, it will return the previous stale item
    * stored in the cache if it has expired. It will attempt
-   * to revalidate it in the background. If false, the returned
+   * to revalidate it in the background. If `false`, the returned
    * promise will be the revalidation promise.
    */
   let instanceStale = instanceOptions?.stale ?? true
@@ -325,9 +325,9 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
 
   /**
    * Aborts the active resolvers on each key
-   * by calling .abort() on the AbortController.
+   * by calling `.abort()` on the `AbortController`.
    * The fetcher is responsible for using the
-   * AbortSignal to cancel the job.
+   * `AbortSignal` to cancel the job.
    * If no keys are provided, all resolvers are aborted.
    */
   function abort(cacheKeys?: string | string[], reason?: any): void {
@@ -361,7 +361,7 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
 
   /**
    * Returns the expiration date of a given key item.
-   * If the item is not in the cache, it will return undefined.
+   * If the item is not in the cache, it will return `undefined`.
    */
   function expiration(key: string): Date | undefined {
     return itemsCache.has(key) ? itemsCache.get(key).expiresAt : undefined
