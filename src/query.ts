@@ -172,6 +172,12 @@ export interface TurboQuery {
   forget(keys?: string | string[]): void
 
   /**
+   * Hydrates the given keys on the cache
+   * with the given value and expiration time.
+   */
+  hydrate<T = any>(keys: string | string[], item: T, expiresAt?: Date): void
+
+  /**
    * Returns the given keys for the given cache.
    */
   keys(cache?: TurboCacheType): string[]
@@ -360,6 +366,16 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
   }
 
   /**
+   * Hydrates the given keys on the cache
+   * with the given value.
+   */
+  function hydrate<T = any>(keys: string | string[], item: T, expiresAt?: Date): void {
+    for (const key of typeof keys === 'string' ? [keys] : keys) {
+      itemsCache.set(key, { item, expiresAt: expiresAt ?? new Date() })
+    }
+  }
+
+  /**
    * Returns the expiration date of a given key item.
    * If the item is not in the cache, it will return undefined.
    */
@@ -459,7 +475,7 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
       // We must check if that item has actually expired.
       // to trigger a revalidation if needed.
       const cached = itemsCache.get<ItemsCacheItem<T>>(key)
-      const hasExpired = cached.expiresAt < new Date()
+      const hasExpired = cached.expiresAt <= new Date()
 
       // The item has expired and the fetch is able
       // to return a stale item while revalidating
@@ -485,5 +501,5 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
     return await refetch(key)
   }
 
-  return { query, subscribe, mutate, configure, abort, forget, keys, expiration }
+  return { query, subscribe, mutate, configure, abort, forget, keys, expiration, hydrate }
 }
