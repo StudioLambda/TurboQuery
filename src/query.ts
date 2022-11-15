@@ -143,6 +143,7 @@ export interface TurboQuery {
   subscribe<T = any>(key: string, event: 'mutated', listener: TurboListener<T>): () => void
   subscribe<T = any>(key: string, event: 'aborted', listener: TurboListener<Promise<T>>): () => void
   subscribe<T = any>(key: string, event: 'forgotten', listener: TurboListener<T>): () => void
+  subscribe<T = any>(key: string, event: 'hydrated', listener: TurboListener<T>): () => void
   subscribe<T = any>(key: string, event: 'error', listener: TurboListener<T>): () => void
   subscribe<T = any>(
     key: string,
@@ -198,6 +199,7 @@ export type TurboQueryEvent =
   | 'mutated'
   | 'aborted'
   | 'forgotten'
+  | 'hydrated'
   | 'error'
 
 /**
@@ -372,6 +374,7 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
   function hydrate<T = any>(keys: string | string[], item: T, expiresAt?: Date): void {
     for (const key of typeof keys === 'string' ? [keys] : keys) {
       itemsCache.set(key, { item, expiresAt: expiresAt ?? new Date() })
+      events.emit(`hydrated:${key}`, item)
     }
   }
 

@@ -248,6 +248,29 @@ it.concurrent('can subscribe to forgets on resources', async ({ expect }) => {
   expect(keys('items')).toHaveLength(0)
 })
 
+it.concurrent('can subscribe to hydrates on resources', async ({ expect }) => {
+  async function fetcher() {
+    return 'example'
+  }
+
+  const { query, subscribe, hydrate, keys } = createTurboQuery({ fetcher })
+
+  const current = await query('example-key', { fetcher })
+
+  expect(current).toBe('example')
+
+  let result: string | undefined = undefined
+  const unsubscribe = subscribe<string>('example-key', 'hydrated', async function (item) {
+    result = item
+  })
+
+  hydrate('example-key', 'hydrated-example')
+  unsubscribe()
+
+  expect(result).toBe('hydrated-example')
+  expect(keys('items')).toHaveLength(1)
+})
+
 it.concurrent('can reconfigure turbo query', async ({ expect }) => {
   async function fetcher() {
     return 'example'
