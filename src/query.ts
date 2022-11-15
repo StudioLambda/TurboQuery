@@ -299,11 +299,13 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
     listener: TurboQueryListener<T>
   ): () => void {
     events.subscribe(`${event}:${key}`, listener)
+
     // For the refetching event, we want to immediatly return if there's
     // a pending resolver.
     if (event === 'refetching' && resolversCache.has(key)) {
       listener(resolversCache.get<ResolversCacheItem<T>>(key).item)
     }
+
     return function () {
       events.unsubscribe(`${event}:${key}`, listener)
     }
@@ -312,15 +314,18 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
   /**
    * Mutates the key with a given optimistic value.
    * The mutated value is considered expired and will be
-   * replaced immediatly if a refetch happens.
+   * replaced immediatly if a refetch happens when no expiresAt
+   * is given. Otherwise the expiration time is used.
    */
-  function mutate<T = any>(key: string, item: TurboMutateValue<T>): void {
+  function mutate<T = any>(key: string, item: TurboMutateValue<T>, expiresAt?: Date): void {
     if (typeof item === 'function') {
       const fn = item as TurboMutateFunction<T>
-      const cached = itemsCache.get<ItemsCacheItem<T>>(key)
-      item = fn(cached.item, cached.expiresAt)
+      const hasKey = itemsCache.has(key)
+      const cached = hasKey ? itemsCache.get<ItemsCacheItem<T>>(key) : undefined
+      item = fn(cached?.item, cached?.expiresAt)
     }
-    itemsCache.set(key, { item, expiresAt: new Date() })
+
+    itemsCache.set(key, { item, expiresAt: expiresAt ?? new Date() })
     events.emit(`mutated:${key}`, item)
   }
 
@@ -369,7 +374,10 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
 
   /**
    * Hydrates the given keys on the cache
-   * with the given value.
+   * with the given value. Hydrate should only
+   * be used when you want to populate the cache.
+   * Please use mutate() in most cases unless you
+   * know what you are doing.
    */
   function hydrate<T = any>(keys: string | string[], item: T, expiresAt?: Date): void {
     for (const key of typeof keys === 'string' ? [keys] : keys) {

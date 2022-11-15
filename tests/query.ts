@@ -176,6 +176,24 @@ it.concurrent('can subscribe to mutations on resources', async ({ expect }) => {
   expect(result).toBe('mutated-example')
 })
 
+it.concurrent('can mutate non-existing cache keys when using a fn', async ({ expect }) => {
+  async function fetcher() {
+    return 'example'
+  }
+
+  const { query, mutate } = createTurboQuery({ fetcher })
+
+  const current = await query('example-key', { fetcher })
+
+  expect(current).toBe('example')
+
+  mutate('example-key-2', () => 'mutated-example')
+
+  const result = await query('example-key-2', { fetcher })
+
+  expect(result).toBe('mutated-example')
+})
+
 it.concurrent('can subscribe to mutations on resources 2', async ({ expect }) => {
   async function fetcher() {
     return 1
