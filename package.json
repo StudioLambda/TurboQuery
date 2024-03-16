@@ -1,21 +1,22 @@
 {
-  "version": "1.9.0",
-  "license": "MIT",
   "name": "turbo-query",
+  "version": "1.10.0",
+  "license": "MIT",
   "description": "Lightweight asynchronous data management",
   "author": {
     "name": "Erik C. Forés",
     "email": "soc@erik.cat",
     "url": "https://erik.cat"
   },
+  "type": "module",
   "types": "./dist/turbo-query.d.ts",
-  "main": "./dist/turbo-query.umd.js",
-  "module": "./dist/turbo-query.mjs",
+  "main": "./dist/turbo-query.umd.cjs",
+  "module": "./dist/turbo-query.js",
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "import": "./dist/turbo-query.mjs",
-      "require": "./dist/turbo-query.umd.js"
+      "import": "./dist/turbo-query.js",
+      "require": "./dist/turbo-query.umd.cjs"
     }
   },
   "files": [
@@ -30,10 +31,9 @@
     "prepack": "npm run build"
   },
   "devDependencies": {
-    "@vitest/coverage-c8": "^0.25.2",
-    "c8": "^7.12.0",
-    "typescript": "^4.9.3",
-    "vite": "^3.2.4",
-    "vitest": "^0.25.2"
+    "@vitest/coverage-v8": "^1.4.0",
+    "typescript": "^5.4.2",
+    "vite": "^5.1.6",
+    "vitest": "^1.4.0"
   }
 }
