@@ -1,12 +1,15 @@
 {
   "name": "turbo-query",
-  "version": "1.10.0",
+  "version": "2.0.0",
   "license": "MIT",
-  "description": "Lightweight asynchronous data management",
+  "description": "Lightweight, isomorphic and framework agnostic asynchronous data management for modern UIs",
   "author": {
     "name": "Erik C. Forés",
     "email": "soc@erik.cat",
     "url": "https://erik.cat"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "type": "module",
   "types": "./dist/turbo-query.d.ts",
@@ -24,15 +27,21 @@
     "package.json"
   ],
   "scripts": {
-    "dev": "vitest",
     "build": "vite build && tsc --skipLibCheck",
+    "dev": "vitest",
     "test": "vitest run",
-    "coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui --coverage",
+    "test:cover": "vitest run --coverage",
     "prepack": "npm run build"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
     "@vitest/coverage-v8": "^1.4.0",
+    "@vitest/ui": "^1.4.0",
+    "eslint": "^8.57.0",
     "typescript": "^5.4.2",
+    "typescript-eslint": "^7.2.0",
     "vite": "^5.1.6",
     "vitest": "^1.4.0"
   }

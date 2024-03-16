@@ -1,5 +1,5 @@
 {
-  "include": ["./src"],
+  "include": ["src"],
   "exclude": ["dist"],
   "compilerOptions": {
     "target": "ESNext",
@@ -15,6 +15,7 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "isolatedModules": true,
+    "noImplicitAny": true,
     "outDir": "./dist",
     "rootDir": "./src"
   }
