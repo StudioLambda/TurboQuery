@@ -5,22 +5,22 @@ export interface TurboCache<T = unknown> {
   /**
    * Gets an item from the cache.
    */
-  get(key: string): T
+  readonly get: (key: string) => T
 
   /**
    * Sets an item to the cache.
    */
-  set(key: string, value: T): void
+  readonly set: (key: string, value: T) => void
 
   /**
    * Removes a key-value pair from the cache.
    */
-  delete(key: string): void
+  readonly delete: (key: string) => void
 
   /**
    * Returns the current cached keys.
    */
-  keys(): IterableIterator<string>
+  readonly keys: () => IterableIterator<string>
 }
 
 /**
@@ -200,6 +200,12 @@ export interface TurboQuery {
    * If the item is not in the cache, it will return `undefined`.
    */
   readonly expiration: (key: string) => Date | undefined
+
+  /**
+   * Returns the current snapshot of the given key.
+   * If the item is not in the items cache, it will return `undefined`.
+   */
+  readonly snapshot: <T = unknown>(key: string) => T | undefined
 }
 
 /**
@@ -346,6 +352,14 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
 
     itemsCache.set(key, { item, expiresAt: expiresAt ?? new Date() })
     events.dispatchEvent(new CustomEvent(`mutated:${key}`, { detail: item }))
+  }
+
+  /**
+   * Returns the current snapshot of the given key.
+   * If the item is not in the items cache, it will return `undefined`.
+   */
+  function snapshot<T = unknown>(key: string): T | undefined {
+    return itemsCache.get(key)?.item as T
   }
 
   /**
@@ -549,5 +563,5 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
     return await refetch(key)
   }
 
-  return { query, subscribe, mutate, configure, abort, forget, keys, expiration, hydrate }
+  return { query, subscribe, mutate, configure, abort, forget, keys, expiration, hydrate, snapshot }
 }

@@ -1,6 +1,6 @@
 {
   "name": "turbo-query",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "license": "MIT",
   "description": "Lightweight, isomorphic and framework agnostic asynchronous data management for modern UIs",
   "author": {
