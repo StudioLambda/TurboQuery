@@ -5,7 +5,7 @@ export interface TurboCache<T = unknown> {
   /**
    * Gets an item from the cache.
    */
-  readonly get: (key: string) => T
+  readonly get: (key: string) => T | undefined
 
   /**
    * Sets an item to the cache.
@@ -141,6 +141,23 @@ export type TurboMutateValue<T> = T | TurboMutateFunction<T>
 export type Unsubscriber = () => void
 
 /**
+ * The caches available on the turbo query.
+ */
+export interface TurboCaches {
+  /**
+   * A cache that contains the resolved items alongside
+   * their expiration time.
+   */
+  readonly items: TurboCache<ItemsCacheItem<unknown>>
+
+  /**
+   * A cache that contains the resolvers alongside
+   * their abort controllers.
+   */
+  readonly resolvers: TurboCache<ResolversCacheItem<unknown>>
+}
+
+/**
  * Represents the methods a turbo query
  * should implement.
  */
@@ -206,6 +223,16 @@ export interface TurboQuery {
    * If the item is not in the items cache, it will return `undefined`.
    */
   readonly snapshot: <T = unknown>(key: string) => T | undefined
+
+  /**
+   * Returns the current cache instances.
+   */
+  readonly caches: () => TurboCaches
+
+  /**
+   * Returns the event system.
+   */
+  readonly events: () => EventTarget
 }
 
 /**
@@ -483,7 +510,7 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
         const controller = new AbortController()
 
         // Initiate the fetching request.
-        const result = fetcher(key, { signal: controller.signal })
+        const result: Promise<T> = fetcher(key, { signal: controller.signal })
 
         // Adds the resolver to the cache.
         resolversCache.set(key, { item: result, controller })
@@ -563,5 +590,32 @@ export function createTurboQuery(instanceOptions?: TurboQueryConfiguration): Tur
     return await refetch(key)
   }
 
-  return { query, subscribe, mutate, configure, abort, forget, keys, expiration, hydrate, snapshot }
+  /**
+   * Returns the current cache instances.
+   */
+  function caches(): TurboCaches {
+    return { items: itemsCache, resolvers: resolversCache }
+  }
+
+  /**
+   * Returns the event system.
+   */
+  function localEvents() {
+    return events
+  }
+
+  return {
+    query,
+    subscribe,
+    mutate,
+    configure,
+    abort,
+    forget,
+    keys,
+    expiration,
+    hydrate,
+    snapshot,
+    caches,
+    events: localEvents,
+  }
 }

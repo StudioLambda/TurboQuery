@@ -6,7 +6,7 @@ Turbo Query is a library created to manage asynchronous data on your code. This 
 
 ## Documentation
 
-Find out about the project and discover the features at the [Documentation](https://erik.cat/post/turbo-query-lightweight-asynchronous-data-management)
+Find out about the project and discover the features at the [Documentation](https://erik.cat/blog/turbo-query-docs/)
 
 ## Installation
 
